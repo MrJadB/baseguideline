@@ -27,6 +27,11 @@ check_directory() {
     fi
 }
 
+# Function to check if a service is enabled
+check_service() {
+    systemctl is-enabled "$1" &>/dev/null && echo "$1 is enabled" >> $OUTPUT_FILE || echo "$1 is not enabled" >> $OUTPUT_FILE
+}
+
 # 1. SSH Configuration
 echo "1. SSH Configuration" >> $OUTPUT_FILE
 check_file /etc/ssh/sshd_config
@@ -108,13 +113,12 @@ add_separator
 
 # 16. Add 'nodev' Option To Appropriate Partitions In /etc/fstab
 echo "16. Add 'nodev' Option To Appropriate Partitions In /etc/fstab" >> $OUTPUT_FILE
-grep nodev /etc/fstab >> $OUTPUT_FILE
+check_file /etc/fstab
 add_separator
 
 # 17. Add 'nosuid' and 'nodev' Option For Removable Media In /etc/fstab
 echo "17. Add 'nosuid' and 'nodev' Option For Removable Media In /etc/fstab" >> $OUTPUT_FILE
-grep nosuid /etc/fstab >> $OUTPUT_FILE
-grep nodev /etc/fstab >> $OUTPUT_FILE
+check_file /etc/fstab
 add_separator
 
 # 18. World-Writable Directories Should Have Their Sticky Bit Set
@@ -149,44 +153,44 @@ add_separator
 
 # 24. Only Enable telnet If Absolutely Necessary
 echo "24. Only Enable telnet If Absolutely Necessary" >> $OUTPUT_FILE
-systemctl status telnet.socket &>/dev/null && systemctl is-enabled telnet.socket >> $OUTPUT_FILE || echo "telnet.socket does not exist" >> $OUTPUT_FILE
+check_service telnet.socket
 add_separator
 
 # 25. Only Enable ftp If Absolutely Necessary
 echo "25. Only Enable ftp If Absolutely Necessary" >> $OUTPUT_FILE
-systemctl status vsftpd.service &>/dev/null && systemctl is-enabled vsftpd.service >> $OUTPUT_FILE || echo "vsftpd.service does not exist" >> $OUTPUT_FILE
+check_service vsftpd.service
 add_separator
 
 # 26. Only Enable rlogin/rsh/rcp If Absolutely Necessary
 echo "26. Only Enable rlogin/rsh/rcp If Absolutely Necessary" >> $OUTPUT_FILE
 for service in rsh.socket rlogin.socket rexec.socket; do
-    systemctl status $service &>/dev/null && systemctl is-enabled $service >> $OUTPUT_FILE || echo "$service does not exist" >> $OUTPUT_FILE
+    check_service $service
 done
 add_separator
 
 # 27. Only Enable TFTP Server if Absolutely Necessary
 echo "27. Only Enable TFTP Server if Absolutely Necessary" >> $OUTPUT_FILE
-systemctl status tftp.socket &>/dev/null && systemctl is-enabled tftp.socket >> $OUTPUT_FILE || echo "tftp.socket does not exist" >> $OUTPUT_FILE
+check_service tftp.socket
 add_separator
 
 # 28. Only Enable IMAP if Absolutely Necessary
 echo "28. Only Enable IMAP if Absolutely Necessary" >> $OUTPUT_FILE
-systemctl status dovecot.service &>/dev/null && systemctl is-enabled dovecot.service >> $OUTPUT_FILE || echo "dovecot.service does not exist" >> $OUTPUT_FILE
+check_service dovecot.service
 add_separator
 
 # 29. Only Enable POP if Absolutely Necessary
 echo "29. Only Enable POP if Absolutely Necessary" >> $OUTPUT_FILE
-systemctl status dovecot.service &>/dev/null && systemctl is-enabled dovecot.service >> $OUTPUT_FILE || echo "dovecot.service does not exist" >> $OUTPUT_FILE
+check_service dovecot.service
 add_separator
 
 # 30. Only Enable SQUID Caching Server if Absolutely Necessary
 echo "30. Only Enable SQUID Caching Server if Absolutely Necessary" >> $OUTPUT_FILE
-systemctl status squid.service &>/dev/null && systemctl is-enabled squid.service >> $OUTPUT_FILE || echo "squid.service does not exist" >> $OUTPUT_FILE
+check_service squid.service
 add_separator
 
 # 31. Only Enable Kudzu Hardware Detection if Absolutely Necessary
 echo "31. Only Enable Kudzu Hardware Detection if Absolutely Necessary" >> $OUTPUT_FILE
-systemctl status kudzu.service &>/dev/null && systemctl is-enabled kudzu.service >> $OUTPUT_FILE || echo "kudzu.service does not exist" >> $OUTPUT_FILE
+check_service kudzu.service
 add_separator
 
 # 32. Create ftpusers Files
@@ -246,62 +250,62 @@ add_separator
 
 # 43. Only Enable NFS Server Processes If Absolutely Necessary
 echo "43. Only Enable NFS Server Processes If Absolutely Necessary" >> $OUTPUT_FILE
-systemctl is-enabled nfs-server &>/dev/null || echo "nfs-server is not enabled" >> $OUTPUT_FILE
+check_service nfs-server
 add_separator
 
 # 44. Only Enable NFS Client Processes If Absolutely Necessary
 echo "44. Only Enable NFS Client Processes If Absolutely Necessary" >> $OUTPUT_FILE
-systemctl is-enabled nfs-client.target &>/dev/null || echo "nfs-client is not enabled" >> $OUTPUT_FILE
+check_service nfs-client.target
 add_separator
 
 # 45. Only Enable NIS Client Processes If Absolutely Necessary
 echo "45. Only Enable NIS Client Processes If Absolutely Necessary" >> $OUTPUT_FILE
-systemctl is-enabled ypbind &>/dev/null || echo "ypbind is not enabled" >> $OUTPUT_FILE
+check_service ypbind
 add_separator
 
 # 46. Only Enable NIS Server Processes If Absolutely Necessary
 echo "46. Only Enable NIS Server Processes If Absolutely Necessary" >> $OUTPUT_FILE
-systemctl is-enabled ypserv &>/dev/null || echo "ypserv is not enabled" >> $OUTPUT_FILE
+check_service ypserv
 add_separator
 
 # 47. Only Enable RPC Portmap Processes If Absolutely Necessary
 echo "47. Only Enable RPC Portmap Processes If Absolutely Necessary" >> $OUTPUT_FILE
-systemctl is-enabled rpcbind &>/dev/null || echo "rpcbind is not enabled" >> $OUTPUT_FILE
+check_service rpcbind
 add_separator
 
 # 48. Only Enable netfs Script If Absolutely Necessary
 echo "48. Only Enable netfs Script If Absolutely Necessary" >> $OUTPUT_FILE
-systemctl is-enabled netfs &>/dev/null || echo "netfs is not enabled" >> $OUTPUT_FILE
+check_service netfs
 add_separator
 
 # 49. Only Enable Printer Daemon Processes If Absolutely Necessary
 echo "49. Only Enable Printer Daemon Processes If Absolutely Necessary" >> $OUTPUT_FILE
-systemctl is-enabled cups &>/dev/null || echo "cups is not enabled" >> $OUTPUT_FILE
+check_service cups
 add_separator
 
 # 50. Only Enable Web Server Processes If Absolutely Necessary
 echo "50. Only Enable Web Server Processes If Absolutely Necessary" >> $OUTPUT_FILE
-systemctl is-enabled httpd &>/dev/null || echo "httpd is not enabled" >> $OUTPUT_FILE
+check_service httpd
 add_separator
 
 # 51. Only Enable SNMP Processes If Absolutely Necessary
 echo "51. Only Enable SNMP Processes If Absolutely Necessary" >> $OUTPUT_FILE
-systemctl is-enabled snmpd &>/dev/null || echo "snmpd is not enabled" >> $OUTPUT_FILE
+check_service snmpd
 add_separator
 
 # 52. Only Enable DNS Processes If Absolutely Necessary
 echo "52. Only Enable DNS Processes If Absolutely Necessary" >> $OUTPUT_FILE
-systemctl is-enabled named &>/dev/null || echo "named is not enabled" >> $OUTPUT_FILE
+check_service named
 add_separator
 
 # 53. Only Enable SQL Server Processes If Absolutely Necessary
 echo "53. Only Enable SQL Server Processes If Absolutely Necessary" >> $OUTPUT_FILE
-systemctl is-enabled mysqld &>/dev/null || echo "mysqld is not enabled" >> $OUTPUT_FILE
+check_service mysqld
 add_separator
 
 # 54. Only Enable Webmin Processes If Absolutely Necessary
 echo "54. Only Enable Webmin Processes If Absolutely Necessary" >> $OUTPUT_FILE
-systemctl is-enabled webmin &>/dev/null || echo "webmin is not enabled" >> $OUTPUT_FILE
+check_service webmin
 add_separator
 
 # 55. Restrict NFS Client Requests to Privileged Ports
