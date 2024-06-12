@@ -1,86 +1,85 @@
 #!/bin/bash
 
-# Function to append a header to the output file
-function append_header {
-    echo "==============================" >> passuser.txt
-    echo "$1" >> passuser.txt
-    echo "==============================" >> passuser.txt
+# Define the output file
+OUTPUT_FILE="configsave.txt"
+
+# Function to append a section header to the output file
+append_header() {
+    echo "============================================================" >> $OUTPUT_FILE
+    echo "$1" >> $OUTPUT_FILE
+    echo "============================================================" >> $OUTPUT_FILE
 }
 
-# Function to append content to the output file
-function append_content {
-    echo "$1" >> passuser.txt
-    echo "" >> passuser.txt
+# Function to append the contents of a file to the output file
+append_file_contents() {
+    local file_path="$1"
+    local file_name="$2"
+
+    append_header "Contents of $file_name"
+    if [ -f "$file_path" ]; then
+        cat "$file_path" >> $OUTPUT_FILE
+        echo "" >> $OUTPUT_FILE
+    else
+        echo "File not found: $file_path" >> $OUTPUT_FILE
+    fi
 }
 
-# Function to save content from specified files that reference file-extension.so
-function save_file_extension_content {
-    files_to_check=("$@")
-    for file in "${files_to_check[@]}"; do
-        if grep -q "file-extension.so" "$file"; then
-            echo "==============================" >> configsave.txt
-            echo "Contents of $file:" >> configsave.txt
-            echo "==============================" >> configsave.txt
-            cat "$file" >> configsave.txt
-            echo "" >> configsave.txt
-        fi
-    done
+# Function to append the output of nm -D for a .so file to the output file
+append_nm_output() {
+    local file_path="$1"
+    local file_name="$2"
+
+    append_header "nm -D output of $file_name"
+    if [ -f "$file_path" ]; then
+        nm -D "$file_path" >> $OUTPUT_FILE
+        echo "" >> $OUTPUT_FILE
+    else
+        echo "File not found: $file_path" >> $OUTPUT_FILE
+    fi
 }
 
-# Clear previous output files
-> passuser.txt
-> configsave.txt
+# Start the script by recording the current date and time
+echo "Script started on: $(date)" > $OUTPUT_FILE
 
-# 1. Add date and time
-append_header "Date and Time"
-append_content "$(date)"
-
-# 2. Add system information
+# Append system information
 append_header "System Information"
-append_content "$(uname -a)"
+uname -a >> $OUTPUT_FILE
+echo "" >> $OUTPUT_FILE
 
-# 3. User Policy
-append_header "User Policy"
+# Define the list of configuration files to save
+CONFIG_FILES=(
+    "/etc/login.defs"
+    "/etc/pam.d/system-auth"
+    "/etc/security/pwquality.conf"
+    "/etc/securetty"
+    "/etc/security/faillock.conf"
+    "/etc/passwd"
+    "/etc/group"
+    "/etc/rsyslog.conf"
+    "/etc/profile"
+    "/var/log/secure"
+    "/etc/syslog.conf"
+    "/var/log/wtmp"
+    "/etc/rsyslog.conf"
+)
 
-# 3.1 List all users
-append_content "List of all users:"
-append_content "$(cat /etc/passwd)"
+# Array to store .so files
+sofile=()
 
-# 3.2 Check for root accounts
-append_content "Check for root accounts:"
-append_content "$(awk -F: '($3 == 0) {print}' /etc/passwd)"
+# Loop through the list and save the contents of each file
+for config_file in "${CONFIG_FILES[@]}"; do
+    append_file_contents "$config_file" "$config_file"
 
-# 3.3 Check for empty password fields
-append_content "Check for empty password fields:"
-append_content "$(awk -F: '($2 == "") {print}' /etc/shadow)"
+    # Check for files starting with "pam" and having .so extension
+    if [[ "$config_file" == "/etc/pam.d/"* && "$config_file" == *".so" ]]; then
+        sofile+=("$config_file")
+    fi
+done
 
-# 3.4 /etc/securetty file content
-append_content "Contents of /etc/securetty:"
-append_content "$(cat /etc/securetty)"
+# Append .so filenames and their contents to the output file
+for so_file in "${sofile[@]}"; do
+    append_header "Contents of $so_file"
+    append_nm_output "$so_file" "$so_file"
+done
 
-# Save file content if it contains file-extension.so
-save_file_extension_content "/etc/passwd" "/etc/shadow" "/etc/securetty"
-
-# 4. Password Policy
-append_header "Password Policy"
-
-# 4.1 Check password minimum length
-append_content "Password minimum length:"
-append_content "$(grep -E '^PASS_MIN_LEN' /etc/login.defs)"
-
-# 4.2 Check password complexity requirements
-append_content "Password complexity requirements:"
-append_content "$(grep -E 'pam_pwquality' /etc/pam.d/system-auth)"
-
-# 4.3 Check password expiration policy
-append_content "Password expiration policy:"
-append_content "$(grep -E '^PASS_MAX_DAYS|^PASS_MIN_DAYS' /etc/login.defs)"
-
-# 4.4 Check password history
-append_content "Password history settings:"
-append_content "$(grep -E 'remember' /etc/pam.d/system-auth)"
-
-# Save file content if it contains file-extension.so
-save_file_extension_content "/etc/login.defs" "/etc/pam.d/system-auth"
-
-echo "Security baseline check completed. Results saved in passuser.txt and configsave.txt"
+echo "Script finished. Configuration saved to $OUTPUT_FILE"
