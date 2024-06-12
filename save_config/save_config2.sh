@@ -1,3 +1,4 @@
+
 #!/bin/bash
 
 # Define the output file
@@ -78,4 +79,3 @@ for config_file in "${CONFIG_FILES[@]}"; do
 done
 
 echo "Script finished. Configuration saved to $OUTPUT_FILE"
-
