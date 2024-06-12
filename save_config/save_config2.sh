@@ -1,4 +1,3 @@
-
 #!/bin/bash
 
 # Define the output file
@@ -64,6 +63,9 @@ CONFIG_FILES=(
     "/etc/rsyslog.conf"
 )
 
+# Array to store .so files
+sofile=()
+
 # Loop through the list and save the contents of each file
 for config_file in "${CONFIG_FILES[@]}"; do
     append_file_contents "$config_file" "$config_file"
@@ -72,10 +74,15 @@ for config_file in "${CONFIG_FILES[@]}"; do
     if [ -f "$config_file" ]; then
         so_files=$(grep -oP "/[^ ]*\.so" "$config_file")
         for so_file in $so_files; do
-            append_header "Referenced .so file: $so_file"
-            append_nm_output "$so_file" "$so_file"
+            sofile+=("$so_file")
         done
     fi
+done
+
+# Append .so filenames and their contents to the output file
+for so_file in "${sofile[@]}"; do
+    append_header "Contents of $so_file"
+    append_nm_output "$so_file" "$so_file"
 done
 
 echo "Script finished. Configuration saved to $OUTPUT_FILE"
