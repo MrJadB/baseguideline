@@ -24,6 +24,20 @@ append_file_contents() {
     fi
 }
 
+# Function to append the output of nm -D for a .so file to the output file
+append_nm_output() {
+    local file_path="$1"
+    local file_name="$2"
+
+    append_header "nm -D output of $file_name"
+    if [ -f "$file_path" ]; then
+        nm -D "$file_path" >> $OUTPUT_FILE
+        echo "" >> $OUTPUT_FILE
+    else
+        echo "File not found: $file_path" >> $OUTPUT_FILE
+    fi
+}
+
 # Start the script by recording the current date and time
 echo "Script started on: $(date)" > $OUTPUT_FILE
 
@@ -58,6 +72,7 @@ for config_file in "${CONFIG_FILES[@]}"; do
         so_files=$(grep -oP "/[^ ]*\.so" "$config_file")
         for so_file in $so_files; do
             append_file_contents "$so_file" "$so_file"
+            append_nm_output "$so_file" "$so_file"
         done
     fi
 done
