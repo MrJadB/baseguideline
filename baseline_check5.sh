@@ -38,6 +38,11 @@ append_nm_output() {
     fi
 }
 
+# Function to find .so files starting with "pam"
+find_pam_so_files() {
+    find / -type f -name "*.so" | awk '/\/.*pam.*\.so/{print $1}'
+}
+
 # Start the script by recording the current date and time
 echo "Script started on: $(date)" > $OUTPUT_FILE
 
@@ -66,15 +71,10 @@ CONFIG_FILES=(
 # Loop through the list and save the contents of each file
 for config_file in "${CONFIG_FILES[@]}"; do
     append_file_contents "$config_file" "$config_file"
-
-    # Check for references to .so files and include their contents as well
-    if [ -f "$config_file" ]; then
-        so_files=$(awk '/\/.*pam.*\.so/{print $1}' "$config_file")
-        for so_file in $so_files; do
-            append_header "Referenced .so file: $so_file"
-            append_nm_output "$so_file" "$so_file"
-        done
-    fi
 done
 
-echo "Script finished. Configuration saved to $OUTPUT_FILE"
+# Find .so files starting with "pam" and append their contents
+pam_so_files=$(find_pam_so_files)
+for so_file in $pam_so_files; do
+    append_header "Referenced .so file: $so_file"
+    append_nm_output "$
