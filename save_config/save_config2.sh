@@ -71,10 +71,11 @@ for config_file in "${CONFIG_FILES[@]}"; do
     if [ -f "$config_file" ]; then
         so_files=$(grep -oP "/[^ ]*\.so" "$config_file")
         for so_file in $so_files; do
-            append_file_contents "$so_file" "$so_file"
+            append_header "Referenced .so file: $so_file"
             append_nm_output "$so_file" "$so_file"
         done
     fi
 done
 
 echo "Script finished. Configuration saved to $OUTPUT_FILE"
+
