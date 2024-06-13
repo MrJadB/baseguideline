@@ -20,6 +20,9 @@ config_files=(
     "/etc/rsyslog.conf"
 )
 
+# Array to store .so files
+so_files=()
+
 # Function to append a header to the output file
 append_header() {
     echo "==============================" >> "$output_file"
@@ -33,10 +36,9 @@ append_content() {
     echo "" >> "$output_file"
 }
 
-# Function to extract .so file extensions and store their objdump -D output
-extract_and_process_so_files() {
+# Function to extract .so file extensions
+extract_so_files() {
     local file_content="$1"
-    local so_files=()
     
     # Extract .so file paths
     while IFS= read -r line; do
@@ -45,8 +47,10 @@ extract_and_process_so_files() {
             so_files+=("$so_file")
         fi
     done <<< "$file_content"
+}
 
-    # Process each .so file
+# Function to process and save .so files at the end
+process_so_files() {
     for so_file in "${so_files[@]}"; do
         find / -name "$so_file" 2>/dev/null | xargs -I {} sh -c '
             echo "#*#* {}" >> "'"$output_file"'"
@@ -70,13 +74,18 @@ append_content "$(uname -a)"
 for config_file in "${config_files[@]}"; do
     if [[ -e "$config_file" ]]; then
         append_header "Contents of $config_file"
-        file_content=$(cat "$config_file" | tr -d '\0')
+        # Use od to display the content of the file without removing null bytes
+        file_content=$(od -c "$config_file")
         append_content "$file_content"
-        extract_and_process_so_files "$file_content"
+        extract_so_files "$file_content"
     else
         append_header "Contents of $config_file"
         append_content "File not found"
     fi
 done
+
+# Process .so files at the end
+append_header "Shared Object Files"
+process_so_files
 
 echo "Config extraction completed. Results saved in $output_file"
