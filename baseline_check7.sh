@@ -70,7 +70,7 @@ append_content "$(uname -a)"
 for config_file in "${config_files[@]}"; do
     if [[ -e "$config_file" ]]; then
         append_header "Contents of $config_file"
-        file_content=$(cat "$config_file")
+        file_content=$(cat "$config_file" | tr -d '\0')
         append_content "$file_content"
         extract_and_process_so_files "$file_content"
     else
