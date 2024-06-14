@@ -31,8 +31,8 @@ log_firewalld_status() {
     echo "" >> "$output_file"
 }
 
-# Function to extract and process .so files
-extract_and_process_so_files() {
+# Function to extract .so files from a file content
+extract_so_files() {
     local file_content="$1"
     local so_files=()
 
@@ -44,7 +44,13 @@ extract_and_process_so_files() {
         fi
     done <<< "$file_content"
 
-    # Process each .so file
+    echo "${so_files[@]}"
+}
+
+# Function to process .so files and log their objdump output
+process_and_log_so_files() {
+    local so_files=("$@")
+
     for so_file in "${so_files[@]}"; do
         find / -name "$so_file" 2>/dev/null | while read -r found_file; do
             echo "#*#* $found_file" >> "$output_file"
@@ -74,16 +80,23 @@ config_files=(
     "/etc/ssh/sshd_config"  # Added sshd_config to the list
 )
 
+# Array to collect .so files
+collected_so_files=()
+
 for config_file in "${config_files[@]}"; do
     if [[ -f "$config_file" ]]; then
         log_file_contents "$config_file"
         file_content=$(cat "$config_file")
-        extract_and_process_so_files "$file_content"
+        so_files=($(extract_so_files "$file_content"))
+        collected_so_files+=("${so_files[@]}")
     else
         echo "File $config_file does not exist." >> "$output_file"
     fi
 done
 
 log_firewalld_status  # Log the status of firewalld at the end
+
+# Process and log .so files at the end
+process_and_log_so_files "${collected_so_files[@]}"
 
 echo "Configuration extraction completed. Output saved to $output_file."
