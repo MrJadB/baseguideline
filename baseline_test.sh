@@ -20,7 +20,7 @@ log_system_info() {
 log_file_contents() {
     local file_path="$1"
     echo "==== Contents of $file_path ====" >> "$output_file"
-    cat "$file_path" >> "$output_file"
+    cat "$file_path" | tr -d '\000' >> "$output_file"
     echo "" >> "$output_file"
 }
 
@@ -86,7 +86,7 @@ collected_so_files=()
 for config_file in "${config_files[@]}"; do
     if [[ -f "$config_file" ]]; then
         log_file_contents "$config_file"
-        file_content=$(cat "$config_file")
+        file_content=$(cat "$config_file" | tr -d '\000')  # Remove null bytes from file content
         so_files=($(extract_so_files "$file_content"))
         collected_so_files+=("${so_files[@]}")
     else
