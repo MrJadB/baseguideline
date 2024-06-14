@@ -4,7 +4,7 @@ output_file="configsave.txt"
 
 # Function to log the current date and time
 log_date() {
-    echo "=" >> "$output_file"
+    echo "============================================================" >> "$output_file"
     echo "==== Date and Time ====" >> "$output_file"
     date >> "$output_file"
     echo "" >> "$output_file"
@@ -12,7 +12,7 @@ log_date() {
 
 # Function to log system information
 log_system_info() {
-    echo "=" >> "$output_file"
+    echo "============================================================" >> "$output_file"
     echo "==== System Information ====" >> "$output_file"
     uname -a >> "$output_file"
     echo "" >> "$output_file"
@@ -21,7 +21,7 @@ log_system_info() {
 # Function to log the contents of a file
 log_file_contents() {
     local file_path="$1"
-    echo "=" >> "$output_file"
+    echo "============================================================" >> "$output_file"
     echo "==== Contents of $file_path ====" >> "$output_file"
     cat "$file_path" | tr -d '\000' >> "$output_file"
     echo "" >> "$output_file"
@@ -29,7 +29,7 @@ log_file_contents() {
 
 # Function to log the status of firewalld
 log_firewalld_status() {
-    echo "=" >> "$output_file"
+    echo "============================================================" >> "$output_file"
     echo "==== Status of firewalld ====" >> "$output_file"
     systemctl status firewalld >> "$output_file"
     echo "" >> "$output_file"
@@ -94,7 +94,7 @@ for config_file in "${config_files[@]}"; do
         so_files=($(extract_so_files "$file_content"))
         collected_so_files+=("${so_files[@]}")
     else
-        echo "=" >> "$output_file"
+        echo "============================================================" >> "$output_file"
         echo "File $config_file does not exist." >> "$output_file"
     fi
 done
