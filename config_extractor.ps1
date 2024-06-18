@@ -1,7 +1,6 @@
-# Define the output file
+# Save this script as config_extractor.ps1
 $output_file = "configsave.txt"
 
-# Function to log the current date and time
 function Log-Date {
     Add-Content -Path $output_file -Value "============================================================"
     Add-Content -Path $output_file -Value "==== Date and Time ===="
@@ -9,7 +8,6 @@ function Log-Date {
     Add-Content -Path $output_file -Value ""
 }
 
-# Function to log system information
 function Log-SystemInfo {
     Add-Content -Path $output_file -Value "============================================================"
     Add-Content -Path $output_file -Value "==== System Information ===="
@@ -17,7 +15,6 @@ function Log-SystemInfo {
     Add-Content -Path $output_file -Value ""
 }
 
-# Function to log the contents of a file
 function Log-FileContents {
     param (
         [string]$file_path
@@ -28,7 +25,6 @@ function Log-FileContents {
     Add-Content -Path $output_file -Value ""
 }
 
-# Function to log the status of Windows Firewall
 function Log-FirewallStatus {
     Add-Content -Path $output_file -Value "============================================================"
     Add-Content -Path $output_file -Value "==== Status of Windows Firewall ===="
@@ -36,7 +32,6 @@ function Log-FirewallStatus {
     Add-Content -Path $output_file -Value ""
 }
 
-# Function to extract .dll files from a file content (equivalent to .so files in Linux)
 function Extract-DllFiles {
     param (
         [string[]]$file_content
@@ -52,7 +47,6 @@ function Extract-DllFiles {
     return $dll_files
 }
 
-# Function to process .dll files and log their information using dumpbin
 function Process-AndLog-DllFiles {
     param (
         [string[]]$dll_files
@@ -68,7 +62,6 @@ function Process-AndLog-DllFiles {
     }
 }
 
-# Main script
 Log-Date
 Log-SystemInfo
 
@@ -81,7 +74,6 @@ $config_files = @(
     "C:\Windows\System32\wbem\Repository\FS\OBJECTS.DATA"
 )
 
-# Array to collect .dll files
 $collected_dll_files = @()
 
 foreach ($config_file in $config_files) {
@@ -96,9 +88,8 @@ foreach ($config_file in $config_files) {
     }
 }
 
-Log-FirewallStatus  # Log the status of Windows Firewall at the end
+Log-FirewallStatus
 
-# Process and log .dll files at the end
 Process-AndLog-DllFiles -dll_files $collected_dll_files
 
 Write-Output "Configuration extraction completed. Output saved to $output_file."
