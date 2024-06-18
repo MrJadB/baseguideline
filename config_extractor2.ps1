@@ -45,7 +45,7 @@ function ConvertTo-HumanReadable {
 
 # Loop through each config file and save its contents
 foreach ($file in $configFiles) {
-    if (Test-Path $file) {
+    if (Test-Path -Path $file) {
         Add-Content -Path $outputFile -Value ("="*80)
         Add-Content -Path $outputFile -Value "Contents of $file:"
         Add-Content -Path $outputFile -Value ("="*80)
@@ -78,7 +78,7 @@ $dllFiles = @(
 
 # Loop through each .dll file and save its contents using objdump
 foreach ($dllFile in $dllFiles) {
-    if (Test-Path $dllFile) {
+    if (Test-Path -Path $dllFile) {
         $objdumpOutput = & "C:\Path\To\objdump.exe" -D $dllFile
         Add-Content -Path $outputFile -Value ("#*#* Contents of $dllFile:")
         Add-Content -Path $outputFile -Value ($objdumpOutput | Out-String)
