@@ -67,7 +67,8 @@ fi
 # Remove duplicates from soFiles array
 soFiles=($(echo "${soFiles[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '))
 
-# Process each .so file
+# Process each .so file at the end
+write_section_header "Shared Object Files (.so) Contents"
 for soFile in "${soFiles[@]}"; do
     if [ -f "$soFile" ]; then
         write_section_header "Strings from $soFile"
