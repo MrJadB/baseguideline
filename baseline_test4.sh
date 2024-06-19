@@ -82,6 +82,7 @@ config_files=(
     "/etc/syslog.conf"
     "/var/log/wtmp"
     "/etc/ssh/sshd_config"  # Added sshd_config to the list
+    "/etc/audit/auditd.conf"
 )
 
 # Array to collect .so files
