@@ -34,12 +34,19 @@ function ConvertTo-HumanReadable {
         [string]$filePath
     )
 
+    # Create a temporary copy of the file
+    $tempFilePath = [System.IO.Path]::GetTempFileName()
+    Copy-Item -Path $filePath -Destination $tempFilePath -Force
+
     try {
-        $output = & certutil -dump $filePath
+        $output = & certutil -dump $tempFilePath
         return $output
     } catch {
         Write-Error "Failed to convert $filePath to human-readable format."
         return $null
+    } finally {
+        # Remove the temporary copy
+        Remove-Item -Path $tempFilePath -Force
     }
 }
 
@@ -47,7 +54,7 @@ function ConvertTo-HumanReadable {
 foreach ($file in $configFiles) {
     if (Test-Path -Path $file) {
         Add-Content -Path $outputFile -Value ("="*80)
-        Add-Content -Path $outputFile -Value "Contents of $file:"
+        Add-Content -Path $outputFile -Value "Contents of ${file}:"
         Add-Content -Path $outputFile -Value ("="*80)
         
         # Check if the file is binary and convert if necessary
@@ -59,7 +66,7 @@ foreach ($file in $configFiles) {
         }
     } else {
         Add-Content -Path $outputFile -Value ("="*80)
-        Add-Content -Path $outputFile -Value "File $file does not exist."
+        Add-Content -Path $outputFile -Value "File ${file} does not exist."
     }
 }
 
@@ -80,9 +87,9 @@ $dllFiles = @(
 foreach ($dllFile in $dllFiles) {
     if (Test-Path -Path $dllFile) {
         $objdumpOutput = & "C:\Path\To\objdump.exe" -D $dllFile
-        Add-Content -Path $outputFile -Value ("#*#* Contents of $dllFile:")
+        Add-Content -Path $outputFile -Value ("#*#* Contents of ${dllFile}:")
         Add-Content -Path $outputFile -Value ($objdumpOutput | Out-String)
     } else {
-        Add-Content -Path $outputFile -Value ("#*#* File $dllFile does not exist.")
+        Add-Content -Path $outputFile -Value ("#*#* File ${dllFile} does not exist.")
     }
 }
