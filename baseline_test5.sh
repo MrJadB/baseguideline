@@ -70,7 +70,7 @@ soFiles=()
 if [ -f "/etc/pam.d/system-auth" ]; then
     while IFS= read -r line; do
         if [[ "$line" == *".so"* ]]; then
-            soFile=$(echo "$line" | grep -o '/[^ ]*\.so')
+            soFile=$(echo "$line" | grep -oP '(\s|\t|^)(\S+\.so\S*)' | tr -d ' ')
             if [ -n "$soFile" ]; then
                 soFiles+=("$soFile")
             fi
