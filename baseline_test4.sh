@@ -58,7 +58,7 @@ process_and_log_so_files() {
     for so_file in "${so_files[@]}"; do
         find / -name "$so_file" 2>/dev/null | while read -r found_file; do
             echo "#*#* $found_file" >> "$output_file"
-            string "$found_file" | grep '/' >> "$output_file"
+            strings "$found_file" | grep '/' >> "$output_file"
             echo "" >> "$output_file"
         done
     done
