@@ -1,80 +1,83 @@
-
-#!/bin/bash
-
 # Output file
-outputFile="configsave.txt"
+$outputFile = "configsave.txt"
 
 # Function to write section headers
-write_section_header() {
-    echo "=================================================" >> "$outputFile"
-    echo "$1" >> "$outputFile"
-    echo "=================================================" >> "$outputFile"
+function Write-SectionHeader {
+    param (
+        [string]$header
+    )
+    Add-Content -Path $outputFile -Value "================================================="
+    Add-Content -Path $outputFile -Value $header
+    Add-Content -Path $outputFile -Value "================================================="
 }
 
 # Write current date and time
-write_section_header "Current Date and Time"
-date >> "$outputFile"
+Write-SectionHeader "Current Date and Time"
+Get-Date | Out-File -Append -FilePath $outputFile
 
 # Write system information
-write_section_header "System Information"
-uname -a >> "$outputFile"
+Write-SectionHeader "System Information"
+Get-ComputerInfo | Out-File -Append -FilePath $outputFile
 
 # List of config files to check
-configFiles=(
-    "/etc/login.defs"
-    "/etc/pam.d/system-auth"
-    "/etc/security/pwquality.conf"
-    "/etc/securetty"
-    "/etc/security/faillock.conf"
-    "/etc/passwd"
-    "/etc/group"
-    "/etc/rsyslog.conf"
-    "/etc/profile"
-    "/var/log/secure"
-    "/etc/syslog.conf"
-    "/var/log/wtmp"
-    "/etc/ssh/sshd_config"
+$configFiles = @(
+    "C:\Windows\System32\drivers\etc\hosts",
+    "C:\Windows\System32\drivers\etc\networks",
+    "C:\Windows\System32\drivers\etc\protocol",
+    "C:\Windows\System32\drivers\etc\services",
+    "C:\Windows\System32\drivers\etc\lmhosts.sam",
+    "C:\Windows\System32\wbem\Repository\INDEX.BTR",
+    "C:\Windows\System32\wbem\Repository\OBJECTS.DATA"
 )
 
 # Process each config file
-for file in "${configFiles[@]}"; do
-    if [ -f "$file" ]; then
-        write_section_header "Contents of $file"
-        cat "$file" >> "$outputFile"
-    else
-        echo "File $file not found." >> "$outputFile"
-    fi
-done
+foreach ($file in $configFiles) {
+    if (Test-Path -Path $file) {
+        Write-SectionHeader "Contents of $file"
+        if ($file -match "INDEX.BTR|OBJECTS.DATA") {
+            # If PowerShell 7+, you can use Format-Hex
+            if ($PSVersionTable.PSVersion.Major -ge 7) {
+                Format-Hex -Path $file | Out-File -Append -FilePath $outputFile
+            } else {
+                Get-Content -Path $file -Encoding Byte | Format-Hex | Out-File -Append -FilePath $outputFile
+            }
+        } else {
+            Get-Content -Path $file | Out-File -Append -FilePath $outputFile
+        }
+    } else {
+        Add-Content -Path $outputFile -Value "File $file not found."
+    }
+}
 
 # Check the status of firewalld service
-write_section_header "Firewalld Service Status"
-systemctl status firewalld >> "$outputFile"
+Write-SectionHeader "Firewall Service Status"
+Get-Service -Name "MpsSvc" | Out-File -Append -FilePath $outputFile
 
-# Array to collect .so files found in the config files
-soFiles=()
+# Array to collect .dll files found in the config files
+$dllFiles = @()
 
-# Find .so files mentioned in /etc/pam.d/system-auth
-if [ -f "/etc/pam.d/system-auth" ]; then
-    while IFS= read -r line; do
-        if [[ "$line" == *".so"* ]]; then
-            soFile=$(echo "$line" | grep -o '/[^ ]*\.so')
-            if [ -n "$soFile" ]; then
-                soFiles+=("$soFile")
-            fi
-        fi
-    done < "/etc/pam.d/system-auth"
-fi
+# Find .dll files mentioned in config files
+foreach ($file in $configFiles) {
+    if (Test-Path -Path $file -and $file -notmatch "INDEX.BTR|OBJECTS.DATA") {
+        $content = Get-Content -Path $file
+        foreach ($line in $content) {
+            if ($line -match "\.dll") {
+                $dllFile = $line -replace '.*?(\S*\.dll).*','$1'
+                if (-not ($dllFiles -contains $dllFile)) {
+                    $dllFiles += $dllFile
+                }
+            }
+        }
+    }
+}
 
-# Remove duplicates from soFiles array
-soFiles=($(echo "${soFiles[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' '))
-
-# Process each .so file at the end
-write_section_header "Shared Object Files (.so) Contents"
-for soFile in "${soFiles[@]}"; do
-    if [ -f "$soFile" ]; then
-        write_section_header "Strings from $soFile"
-        strings "$soFile" | grep '/' >> "$outputFile"
-    else
-        echo "Shared object file $soFile not found." >> "$outputFile"
-    fi
-done
+# Process each .dll file at the end
+Write-SectionHeader "DLL Files Contents"
+foreach ($dllFile in $dllFiles) {
+    if (Test-Path -Path $dllFile) {
+        Write-SectionHeader "Strings from $dllFile"
+        strings "$dllFile" | Out-File -Append -FilePath $outputFile
+    } else {
+        Add-Content -Path $outputFile -Value "DLL file $dllFile not found."
+    }
+}
