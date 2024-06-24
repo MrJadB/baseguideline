@@ -11,13 +11,23 @@ function Write-SectionHeader {
     Add-Content -Path $outputFile -Value "================================================="
 }
 
-# Write current date and time
-Write-SectionHeader "Current Date and Time"
-Get-Date | Out-File -Append -FilePath $outputFile
-
-# Write system information
-Write-SectionHeader "System Information"
-Get-ComputerInfo | Out-File -Append -FilePath $outputFile
+# Function to read binary file and convert to human-readable format
+function Read-BinaryFile {
+    param (
+        [string]$filePath
+    )
+    try {
+        $stream = New-Object System.IO.FileStream($filePath, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::ReadWrite)
+        $reader = New-Object System.IO.StreamReader($stream, [System.Text.Encoding]::ASCII)
+        $content = $reader.ReadToEnd()
+        $reader.Close()
+        $stream.Close()
+        return $content
+    } catch {
+        Write-Host "Error reading file: $_"
+        return ""
+    }
+}
 
 # List of config files to check
 $configFiles = @(
@@ -35,12 +45,8 @@ foreach ($file in $configFiles) {
     if (Test-Path -Path $file) {
         Write-SectionHeader "Contents of $file"
         if ($file -match "INDEX.BTR|OBJECTS.DATA") {
-            # If PowerShell 7+, you can use Format-Hex
-            if ($PSVersionTable.PSVersion.Major -ge 7) {
-                Format-Hex -Path $file | Out-File -Append -FilePath $outputFile
-            } else {
-                Get-Content -Path $file -Encoding Byte | Format-Hex | Out-File -Append -FilePath $outputFile
-            }
+            $output = Read-BinaryFile $file
+            Add-Content -Path $outputFile -Value $output
         } else {
             Get-Content -Path $file | Out-File -Append -FilePath $outputFile
         }
@@ -49,22 +55,24 @@ foreach ($file in $configFiles) {
     }
 }
 
-# Check the status of firewalld service
+# Check the status of the firewall service
 Write-SectionHeader "Firewall Service Status"
-Get-Service -Name "MpsSvc" | Out-File -Append -FilePath $outputFile
+netsh advfirewall show allprofiles | Out-File -Append -FilePath $outputFile
 
 # Array to collect .dll files found in the config files
 $dllFiles = @()
 
 # Find .dll files mentioned in config files
 foreach ($file in $configFiles) {
-    if (Test-Path -Path $file -and $file -notmatch "INDEX.BTR|OBJECTS.DATA") {
-        $content = Get-Content -Path $file
-        foreach ($line in $content) {
-            if ($line -match "\.dll") {
-                $dllFile = $line -replace '.*?(\S*\.dll).*','$1'
-                if (-not ($dllFiles -contains $dllFile)) {
-                    $dllFiles += $dllFile
+    if (Test-Path -Path $file) {
+        if ($file -notmatch "INDEX.BTR|OBJECTS.DATA") {
+            $content = Get-Content -Path $file
+            foreach ($line in $content) {
+                if ($line -match "\.dll") {
+                    $dllFile = $line -replace '.*?(\S*\.dll).*','$1'
+                    if (-not ($dllFiles -contains $dllFile)) {
+                        $dllFiles += $dllFile
+                    }
                 }
             }
         }
@@ -76,7 +84,8 @@ Write-SectionHeader "DLL Files Contents"
 foreach ($dllFile in $dllFiles) {
     if (Test-Path -Path $dllFile) {
         Write-SectionHeader "Strings from $dllFile"
-        strings "$dllFile" | Out-File -Append -FilePath $outputFile
+        $output = Read-BinaryFile $dllFile
+        Add-Content -Path $outputFile -Value $output
     } else {
         Add-Content -Path $outputFile -Value "DLL file $dllFile not found."
     }
